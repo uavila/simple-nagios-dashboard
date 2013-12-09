@@ -16,9 +16,14 @@ ini_set('display_startup_errors',1);
 error_reporting(-1);
 
 $title = "Service Status Dashboard";
-$organization = "My Company";
+$organization = "";
 $support_url = "https://support.mycompany.org";
-$json_url = "https://monitoring.mycompany.org/nagios.json";
+$json_url= array( 
+	array ( "name" => "DC1", "url" => "http://192.168.0.41/nagios.json"),
+#	array ( "name" => "DC2", "url" => "http://10.220.14.57/nagios.json"),
+	array ( "name" => "DC3", "url" => "https://172.16.6.223/nagios.json"),
+	array ( "name" => "DC4", "url" => "https://172.29.129.44/nagios.json"),
+);
 $nagios_url = "https://monitoring.mycompany.org/nagios3/";
 $extinfo_url = "https://monitoring.mycompany.org/cgi-bin/nagios3/extinfo.cgi";
 

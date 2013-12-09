@@ -12,12 +12,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 require_once("./functions.php");
+require_once("./config.php");
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title><?php print($title . " - " . $organization); ?></title>
+    <title><?php print($title . "  " . $organization); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Remy van Elst">
     <meta http-equiv="refresh" content="30">
@@ -41,46 +42,49 @@ require_once("./functions.php");
         </div>
     </div>
 
-    <div class="row">
+	<div class='row'>
         <div class="col-md-12">
-            <?php
-            print($hosts_total . " Hosts");
-            print("<br />" . $service_total . " Services<br />");
-            if($criticals_count > 0 || $host_issue_count > 0) {
+       <?php
+	foreach ($json_url as $url) {
+          print("<div class='col-md-3'>");
+            print($url['name'] . " - " . $hosts_total[$url['name']] . " Hosts - ". $service_total[$url['name']] . " Services<br />");
+            if($criticals_count[$url['name']] > 0 || $host_issue_count[$url['name']] > 0) {
                 print('<div class="alert alert-danger"><h2>');
                     #print('<script type="text/javascript">document.body.style.backgroundColor = "#ff0039";</script>');
-                if($criticals_count > 0) {
-                    print(($criticals_count));
+                if($criticals_count[$url['name']] > 0) {
+                    print(($criticals_count[$url['name']]));
                     print(" Critical Issues. ");
                 }
-                if ($host_issue_count > 0) {
-                 print($host_issue_count . " Hosts Down!");
+                if ($host_issue_count[$url['name']] > 0) {
+                 print($host_issue_count[$url['name']] . " Hosts Down!");
              } 
              print("<h2></div>");
-         } elseif(($warnings_count) > 0) {
-            print(($warnings_count));
+         } elseif(($warnings_count[$url['name']]) > 0) {
+            print('<div class="alert alert-success"><h2>');
+            print(($warnings_count[$url['name']]));
             print(" Non Critical Issues</h2></div>");
         } else {
             print('<div class="alert alert-success"><h2>');
             print(" Everything Running Fine!</h2></div>");
         }
+	print("</div>");
+	}
         ?>
-    </div>
+	</div>
 </div>
-
 <div class="row">
     <div class="col-md-6">
         <?php
-        host_alert_cards("Hosts Down", "danger", $host_issue_count, $host_issues);
-        service_alert_cards("Critical Issues", "danger", $criticals_count, $criticals);
-        host_alert_cards("Hosts Acknowledged Down", "info", $host_ack_issues_count, $host_ack_issues);
+	foreach ($json_url as $url) { host_alert_cards("Hosts Down - " . $url['name'], "danger", $host_issue_count[$url['name']], $host_issues[$url['name']]); }
+        foreach ($json_url as $url) { service_alert_cards("Critical Issues - " . $url['name'], "danger", $criticals_count[$url['name']], $criticals[$url['name']]); }
+        foreach ($json_url as $url) { host_alert_cards("Hosts Acknowledged Down - " . $url['name'], "info", $host_ack_issues_count[$url['name']], $host_ack_issues[$url['name']]); }
         ?>
     </div>
     <div class="col-md-6">
         <?php
-        service_alert_cards("Minor Issues ", "warning", $warnings_count, $warnings);
-        service_alert_cards("Acknowledged Minor Issues", "info", $warnings_ack_count, $warnings_ack_issues);
-        service_alert_cards("Acknowledged Criticals", "info", $criticals_ack_count, $criticals_ack);
+        foreach ($json_url as $url) { service_alert_cards("Minor Issues - " . $url['name'], "warning", $warnings_count[$url['name']], $warnings[$url['name']]); }
+        foreach ($json_url as $url) { service_alert_cards("Acknowledged Minor Issues - " . $url['name'], "info", $warnings_ack_count[$url['name']], $warnings_ack_issues[$url['name']]); }
+        foreach ($json_url as $url) { service_alert_cards("Acknowledged Criticals - " . $url['name'], "info", $criticals_ack_count[$url['name']], $criticals_ack[$url['name']]); }
         ?>
     </div>
     <div class="col-md-6">
