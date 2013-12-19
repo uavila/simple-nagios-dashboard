@@ -13,88 +13,74 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 require_once('./config.php');
 
-// Got from http://www.binarytides.com
-function get_url($url)
-{
-    //user agent is very necessary, otherwise some websites like google.com wont give zipped content
-    $opts = array(
-        'http'=>array(
-            'method'=>"GET",
-            'header'=>"Accept-Language: en-US,en;q=0.8rn" .
-                        "Accept-Encoding: gzip,deflate,sdchrn" .
-                        "Accept-Charset:UTF-8,*;q=0.5rn" .
-                        "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 FirePHP/0.4rn"
-        )
-    );
- 
-    $context = stream_context_create($opts);
-    $content = file_get_contents($url ,false,$context); 
-     
-    //If http response header mentions that content is gzipped, then uncompress it
-    foreach($http_response_header as $c => $h)
-    {
-        if(stristr($h, 'content-encoding') and stristr($h, 'gzip'))
-        {
-            //Now lets uncompress the compressed data
-            $content = gzinflate( substr($content,10,-8) );
-        }
-    }
-     
+function get_url($url) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_VERBOSE, true);
+    curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+    $content = curl_exec($ch);
+    curl_close($ch);  
+
     return $content;
 }
  
 function data_to_json($url) {
-#    $json = file_get_contents($url);
     $json = get_url($url);
     $data = json_decode($json, true);
     return $data;
 }
+
 $hosts = array();
 $warnings = array();
 $warnings_count = array();
+
 foreach ($json_url as $url) {
-	$data[$url['name']] = data_to_json($url['url']);
+    $data[$url['name']] = data_to_json($url['url']);
 
-if(empty($data[$url['name']])) {
-    die("<html><head><title>Dashboard Error</title><meta name='author' content='Remy van Elst'><meta http-equiv='refresh' content='5'></head><body>JSON File $json_url could not be loaded</body></html>");
+    if(empty($data[$url['name']])) {
+        die("<html><head><title>Dashboard Error</title><meta name='author' content='Remy van Elst'><meta http-equiv='refresh' content='5'></head><body>JSON File could not be loaded</body></html>");
+    }
+
+    $hosts[$url['name']] = $data[$url['name']]["hosts"];
+    $services[$url['name']] = $data[$url['name']]["services"];
+    $host[$url['name']] = array();
+    foreach ($services[$url['name']] as $key => $value) {
+        $host[$url['name']]["$key"] = $value;
+    }
+    $hosts_total[$url['name']] = host_total($hosts[$url['name']]);
+    $service_total[$url['name']] = service_total($services[$url['name']]);
+    $host_issue_count[$url['name']] = host_issue_count($hosts[$url['name']], 1, 0, 1);
+    $host_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 0, 1);
+    $host_ackn_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 1, 1);
+    $host_not_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 0, 0);
+    $host_ack_issues[$url['name']] = array_merge($host_ackn_issues[$url['name']], $host_not_issues[$url['name']]);
+    $host_ack_issues_count[$url['name']] = count($host_ack_issues[$url['name']]);
+
+    $warnings[$url['name']] = alert_services($host[$url['name']], 1, 0, 1);
+    $warnings_count[$url['name']] = count($warnings[$url['name']]);
+
+    $warnings_ackn[$url['name']] = alert_services($host[$url['name']], 1, 1, 1);
+    $warnings_not[$url['name']] = alert_services($host[$url['name']], 1, 0, 0);
+
+    $warnings_ack_issues[$url['name']] = array_merge($warnings_ackn[$url['name']], $warnings_not[$url['name']]);
+    $warnings_ack_count[$url['name']] = count($warnings_ack_issues[$url['name']]);
+
+
+    $criticals[$url['name']] = alert_services($host[$url['name']], 2, 0, 1);
+    $criticals_count[$url['name']] = count($criticals[$url['name']]);
+
+    $criticals_ackn[$url['name']] = alert_services($host[$url['name']], 2, 1, 1);
+    $criticals_not[$url['name']] = alert_services($host[$url['name']], 2, 0, 0);
+
+    $criticals_ack[$url['name']] = array_merge($criticals_ackn[$url['name']], $criticals_not[$url['name']]);
+    $criticals_ack_count[$url['name']] = count($criticals_ack[$url['name']]);
 }
 
-$hosts[$url['name']] = $data[$url['name']]["hosts"];
-$services[$url['name']] = $data[$url['name']]["services"];
-$host[$url['name']] = array();
-foreach ($services[$url['name']] as $key => $value) {
-    $host[$url['name']]["$key"] = $value;
-}
-$hosts_total[$url['name']] = host_total($hosts[$url['name']]);
-$service_total[$url['name']] = service_total($services[$url['name']]);
-$host_issue_count[$url['name']] = host_issue_count($hosts[$url['name']], 1, 0, 1);
-$host_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 0, 1);
-$host_ackn_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 1, 1);
-$host_not_issues[$url['name']] = alert_hosts($hosts[$url['name']], 1, 0, 0);
-$host_ack_issues[$url['name']] = array_merge($host_ackn_issues[$url['name']], $host_not_issues[$url['name']]);
-$host_ack_issues_count[$url['name']] = count($host_ack_issues[$url['name']]);
-
-$warnings[$url['name']] = alert_services($host[$url['name']], 1, 0, 1);
-$warnings_count[$url['name']] = count($warnings[$url['name']]);
-
-$warnings_ackn[$url['name']] = alert_services($host[$url['name']], 1, 1, 1);
-$warnings_not[$url['name']] = alert_services($host[$url['name']], 1, 0, 0);
-
-$warnings_ack_issues[$url['name']] = array_merge($warnings_ackn[$url['name']], $warnings_not[$url['name']]);
-$warnings_ack_count[$url['name']] = count($warnings_ack_issues[$url['name']]);
-
-
-$criticals[$url['name']] = alert_services($host[$url['name']], 2, 0, 1);
-$criticals_count[$url['name']] = count($criticals[$url['name']]);
-
-$criticals_ackn[$url['name']] = alert_services($host[$url['name']], 2, 1, 1);
-$criticals_not[$url['name']] = alert_services($host[$url['name']], 2, 0, 0);
-
-$criticals_ack[$url['name']] = array_merge($criticals_ackn[$url['name']], $criticals_not[$url['name']]);
-$criticals_ack_count[$url['name']] = count($criticals_ack[$url['name']]);
-
-
-}
 function host_total($hosts) {
     $hosts_total = count($hosts);
     return $hosts_total;
@@ -209,7 +195,5 @@ function host_alert_cards($severety, $card_type, $counter, $card_data) {
         }
     }
 }
-
-
 
 ?>

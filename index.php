@@ -21,7 +21,7 @@ require_once("./config.php");
     <title><?php print($title . "  " . $organization); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Remy van Elst">
-    <meta http-equiv="refresh" content="30">
+    <meta http-equiv="refresh" content="60">
     <link href="//netdna.bootstrapcdn.com/bootswatch/3.0.2/united/bootstrap.min.css" rel="stylesheet">
     <style type="text/css">
         a {
@@ -38,44 +38,44 @@ require_once("./config.php");
 
     <div class="row">
         <div class="col-md-12">
-            <h1><?php print($title . " - " . $organization); ?></h1>
+            <h1><?php print($title . "  " . $organization); ?></h1>
         </div>
     </div>
 
-	<div class='row'>
+    <div class='row'>
         <div class="col-md-12">
-       <?php
-	foreach ($json_url as $url) {
-          print("<div class='col-md-3'>");
-            print($url['name'] . " - " . $hosts_total[$url['name']] . " Hosts - ". $service_total[$url['name']] . " Services<br />");
-            if($criticals_count[$url['name']] > 0 || $host_issue_count[$url['name']] > 0) {
-                print('<div class="alert alert-danger"><h2>');
+            <?php
+            foreach ($json_url as $url) {
+                print("<div class='col-md-" . 12/count($json_url) . "'>");
+                print($url['name'] . " - " . $hosts_total[$url['name']] . " Hosts - ". $service_total[$url['name']] . " Services<br />");
+                if($criticals_count[$url['name']] > 0 || $host_issue_count[$url['name']] > 0) {
+                    print('<div class="alert alert-danger"><h2>');
                     #print('<script type="text/javascript">document.body.style.backgroundColor = "#ff0039";</script>');
-                if($criticals_count[$url['name']] > 0) {
-                    print(($criticals_count[$url['name']]));
-                    print(" Critical Issues. ");
+                    if($criticals_count[$url['name']] > 0) {
+                        print(($criticals_count[$url['name']]));
+                        print(" Critical Issues. ");
+                    }
+                    if ($host_issue_count[$url['name']] > 0) {
+                        print($host_issue_count[$url['name']] . " Hosts Down!");
+                    } 
+                    print("<h2></div>");
+                } elseif(($warnings_count[$url['name']]) > 0) {
+                    print('<div class="alert alert-success"><h2>');
+                    print(($warnings_count[$url['name']]));
+                    print(" Non Critical Issues</h2></div>");
+                } else {
+                    print('<div class="alert alert-success"><h2>');
+                    print(" Everything Running Fine!</h2></div>");
                 }
-                if ($host_issue_count[$url['name']] > 0) {
-                 print($host_issue_count[$url['name']] . " Hosts Down!");
-             } 
-             print("<h2></div>");
-         } elseif(($warnings_count[$url['name']]) > 0) {
-            print('<div class="alert alert-success"><h2>');
-            print(($warnings_count[$url['name']]));
-            print(" Non Critical Issues</h2></div>");
-        } else {
-            print('<div class="alert alert-success"><h2>');
-            print(" Everything Running Fine!</h2></div>");
-        }
-	print("</div>");
-	}
-        ?>
-	</div>
-</div>
+                print("</div>");
+                }
+            ?>
+        </div>
+    </div>
 <div class="row">
     <div class="col-md-6">
         <?php
-	foreach ($json_url as $url) { host_alert_cards("Hosts Down - " . $url['name'], "danger", $host_issue_count[$url['name']], $host_issues[$url['name']]); }
+        foreach ($json_url as $url) { host_alert_cards("Hosts Down - " . $url['name'], "danger", $host_issue_count[$url['name']], $host_issues[$url['name']]); }
         foreach ($json_url as $url) { service_alert_cards("Critical Issues - " . $url['name'], "danger", $criticals_count[$url['name']], $criticals[$url['name']]); }
         foreach ($json_url as $url) { host_alert_cards("Hosts Acknowledged Down - " . $url['name'], "info", $host_ack_issues_count[$url['name']], $host_ack_issues[$url['name']]); }
         ?>
